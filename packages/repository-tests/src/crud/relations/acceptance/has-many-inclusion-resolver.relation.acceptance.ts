@@ -235,10 +235,17 @@ export function hasManyInclusionResolverAcceptance(
       });
 
       const pizza = await orderRepo.findById(thorOrder.id.toString());
-      const reheatedPizza = {...pizza};
-      reheatedPizza.description = 'Reheated pizza';
+      pizza.description = 'Reheated pizza';
+      const reheatedPizza = toJSON(pizza);
 
-      await orderRepo.replaceById(thorOrder.id, reheatedPizza);
+      // coerce the id for mongodb connector to pass the id equality check
+      // in juggler's replaceById function
+      const coercedId =
+        typeof thorOrder.id === 'number'
+          ? thorOrder.id
+          : thorOrder.id.toString();
+
+      await orderRepo.replaceById(coercedId, reheatedPizza);
       const odinPizza = await orderRepo.findById(thorOrder.id);
 
       const result = await customerRepo.find({
