@@ -22,6 +22,89 @@ import {
 } from '../..';
 
 describe('Application life cycle', () => {
+  describe('state', () => {
+    it('updates application state', async () => {
+      const app = new Application();
+      expect(app.state).to.equal('created');
+      const start = app.start();
+      expect(app.state).to.equal('starting');
+      await start;
+      expect(app.state).to.equal('started');
+      const stop = app.stop();
+      expect(app.state).to.equal('stopping');
+      await stop;
+      expect(app.state).to.equal('stopped');
+    });
+
+    it('emits state change events', async () => {
+      const app = new Application();
+      const events: string[] = [];
+      app.on('stateChanged', event => {
+        events.push(`${event.from} -> ${event.to}`);
+      });
+      const start = app.start();
+      expect(events).to.eql(['created -> starting']);
+      await start;
+      expect(events).to.eql(['created -> starting', 'starting -> started']);
+      const stop = app.stop();
+      expect(events).to.eql([
+        'created -> starting',
+        'starting -> started',
+        'started -> stopping',
+      ]);
+      await stop;
+      expect(events).to.eql([
+        'created -> starting',
+        'starting -> started',
+        'started -> stopping',
+        'stopping -> stopped',
+      ]);
+    });
+
+    it('emits state events', async () => {
+      const app = new Application();
+      const events: string[] = [];
+      for (const e of ['starting', 'started', 'stopping', 'stopped']) {
+        app.on(e, event => {
+          events.push(e);
+        });
+      }
+      const start = app.start();
+      expect(events).to.eql(['starting']);
+      await start;
+      expect(events).to.eql(['starting', 'started']);
+      const stop = app.stop();
+      expect(events).to.eql(['starting', 'started', 'stopping']);
+      await stop;
+      expect(events).to.eql(['starting', 'started', 'stopping', 'stopped']);
+    });
+
+    it('allows application.stop when it is created', async () => {
+      const app = new Application();
+      await app.stop(); // no-op
+      expect(app.state).to.equal('created');
+    });
+
+    it('await application.stop when it is stopping', async () => {
+      const app = new Application();
+      await app.start();
+      const stop = app.stop();
+      const stopAgain = app.stop();
+      await stop;
+      await stopAgain;
+      expect(app.state).to.equal('stopped');
+    });
+
+    it('await application.start when it is starting', async () => {
+      const app = new Application();
+      const start = app.start();
+      const startAgain = app.start();
+      await start;
+      await startAgain;
+      expect(app.state).to.equal('started');
+    });
+  });
+
   describe('start', () => {
     it('starts all injected servers', async () => {
       const app = new Application();

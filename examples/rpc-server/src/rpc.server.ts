@@ -5,8 +5,8 @@
 
 import {Context, inject} from '@loopback/context';
 import {Application, CoreBindings, Server} from '@loopback/core';
-import * as express from 'express';
-import * as http from 'http';
+import express from 'express';
+import http from 'http';
 import pEvent from 'p-event';
 import {rpcRouter} from './rpc.router';
 
@@ -20,7 +20,7 @@ export class RPCServer extends Context implements Server {
     @inject('rpcServer.config') public config?: RPCServerConfig,
   ) {
     super(app);
-    this.config = config || {};
+    this.config = config ?? {};
     this.expressServer = express();
     rpcRouter(this);
   }

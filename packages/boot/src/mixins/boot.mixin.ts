@@ -65,12 +65,18 @@ export function BootMixin<T extends Constructor<any>>(superClass: T) {
      * Convenience method to call bootstrapper.boot() by resolving bootstrapper
      */
     async boot(): Promise<void> {
+      if (this.state === 'booting') return this.awaitState('booted');
+      this.assertNotInProcess('boot');
+      this.assertInStates('boot', 'created', 'booted');
+      if (this.state === 'booted') return;
+      this.setState('booting');
       // Get a instance of the BootStrapper
       const bootstrapper: Bootstrapper = await this.get(
         BootBindings.BOOTSTRAPPER_KEY,
       );
 
       await bootstrapper.boot();
+      this.setState('booted');
     }
 
     /**

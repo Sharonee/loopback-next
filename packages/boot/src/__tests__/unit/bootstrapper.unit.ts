@@ -62,6 +62,40 @@ describe('boot-strapper unit tests', () => {
     expect(booterInst.phasesCalled).to.eql(['TestBooter:configure']);
   });
 
+  it('sets application states', async () => {
+    const boot = app.boot();
+    expect(app.state).to.eql('booting');
+    await boot;
+    expect(app.state).to.eql('booted');
+    // No-op
+    await app.boot();
+    expect(app.state).to.eql('booted');
+    const start = app.start();
+    expect(app.state).to.equal('starting');
+    await start;
+    expect(app.state).to.equal('started');
+    const stop = app.stop();
+    expect(app.state).to.equal('stopping');
+    await stop;
+    expect(app.state).to.equal('stopped');
+  });
+
+  it('awaits booted if the application is booting', async () => {
+    const boot = app.boot();
+    expect(app.state).to.eql('booting');
+    const bootAgain = app.boot();
+    await boot;
+    await bootAgain;
+    expect(app.state).to.eql('booted');
+  });
+
+  it('throws error with invalid application states', async () => {
+    await app.start();
+    await expect(app.boot()).to.be.rejectedWith(
+      /Cannot boot the application as it is started\. Valid states are created,booted\./,
+    );
+  });
+
   /**
    * Sets 'app' as a new instance of Application. Registers TestBooter as a booter.
    */

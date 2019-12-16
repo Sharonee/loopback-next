@@ -11,8 +11,8 @@ import {
   MetadataMap,
   MethodDecoratorFactory,
 } from '@loopback/metadata';
-import * as assert from 'assert';
-import * as debugFactory from 'debug';
+import assert from 'assert';
+import debugFactory from 'debug';
 import {Binding, BindingTemplate} from './binding';
 import {bind} from './binding-decorator';
 import {filterByTag} from './binding-filter';
@@ -48,12 +48,36 @@ export class InterceptedInvocationContext extends InvocationContext {
    */
   getGlobalInterceptorBindingKeys(): string[] {
     const bindings: Readonly<Binding<Interceptor>>[] = this.find(
-      filterByTag(ContextTags.GLOBAL_INTERCEPTOR),
+      binding =>
+        filterByTag(ContextTags.GLOBAL_INTERCEPTOR)(binding) &&
+        // Only include interceptors that match the source type of the invocation
+        this.applicableTo(binding),
     );
     this.sortGlobalInterceptorBindings(bindings);
     const keys = bindings.map(b => b.key);
     debug('Global interceptor binding keys:', keys);
     return keys;
+  }
+
+  /**
+   * Check if the binding for a global interceptor matches the source type
+   * of the invocation
+   * @param binding - Binding
+   */
+  private applicableTo(binding: Readonly<Binding<unknown>>) {
+    const sourceType = this.source?.type;
+    // Unknown source type, always apply
+    if (sourceType == null) return true;
+    const allowedSource: string | string[] =
+      binding.tagMap[ContextTags.GLOBAL_INTERCEPTOR_SOURCE];
+    return (
+      // No tag, always apply
+      allowedSource == null ||
+      // source matched
+      allowedSource === sourceType ||
+      // source included in the string[]
+      (Array.isArray(allowedSource) && allowedSource.includes(sourceType))
+    );
   }
 
   /**
@@ -67,7 +91,7 @@ export class InterceptedInvocationContext extends InvocationContext {
     const orderedGroups =
       this.getSync(ContextBindings.GLOBAL_INTERCEPTOR_ORDERED_GROUPS, {
         optional: true,
-      }) || [];
+      }) ?? [];
     return sortBindingsByPhase(
       bindings,
       ContextTags.GLOBAL_INTERCEPTOR_GROUP,
@@ -88,11 +112,11 @@ export class InterceptedInvocationContext extends InvocationContext {
         INTERCEPT_METHOD_KEY,
         this.target,
         this.methodName,
-      ) || [];
+      ) ?? [];
     const targetClass =
       typeof this.target === 'function' ? this.target : this.target.constructor;
     const classInterceptors =
-      MetadataInspector.getClassMetadata(INTERCEPT_CLASS_KEY, targetClass) ||
+      MetadataInspector.getClassMetadata(INTERCEPT_CLASS_KEY, targetClass) ??
       [];
     // Inserting class level interceptors before method level ones
     interceptors = mergeInterceptors(classInterceptors, interceptors);
@@ -305,6 +329,7 @@ export function invokeMethodWithInterceptors(
     target,
     methodName,
     args,
+    options.source,
   );
 
   invocationCtx.assertMethodExists();

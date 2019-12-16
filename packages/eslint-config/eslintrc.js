@@ -150,6 +150,9 @@ module.exports = {
     '@typescript-eslint/no-misused-promises': 'error',
 
     '@typescript-eslint/prefer-optional-chain': 'error',
+    '@typescript-eslint/prefer-nullish-coalescing': 'error',
+    '@typescript-eslint/no-extra-non-null-assertion': 'error',
+    '@typescript-eslint/return-await': 'error',
   },
 
   overrides: [
@@ -157,6 +160,7 @@ module.exports = {
       files: ['**/*.js'],
       rules: {
         '@typescript-eslint/prefer-optional-chain': 'off',
+        '@typescript-eslint/prefer-nullish-coalescing': 'off',
       },
     },
   ],

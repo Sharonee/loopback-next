@@ -8,7 +8,7 @@ import {Application} from '@loopback/core';
 import {SecurityBindings, securityId, UserProfile} from '@loopback/security';
 import {expect} from '@loopback/testlab';
 import * as casbin from 'casbin';
-import * as path from 'path';
+import path from 'path';
 import {
   AuthorizationComponent,
   AuthorizationContext,
@@ -145,7 +145,7 @@ describe('Authorization', () => {
       events.push(authorizationCtx.resource);
       const request: AuthorizationRequest = {
         subject: authorizationCtx.principals[0].name,
-        object: metadata.resource || authorizationCtx.resource,
+        object: metadata.resource ?? authorizationCtx.resource,
         action: (metadata.scopes && metadata.scopes[0]) || 'execute',
       };
       const allow = await this.enforcer.enforce(

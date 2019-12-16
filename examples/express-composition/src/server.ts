@@ -4,11 +4,10 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {ApplicationConfig} from '@loopback/core';
-import * as express from 'express';
-import {Request, Response} from 'express';
-import * as http from 'http';
+import express, {Request, Response} from 'express';
+import http from 'http';
 import pEvent from 'p-event';
-import * as path from 'path';
+import path from 'path';
 import {NoteApplication} from './application';
 
 export class ExpressServer {
@@ -42,7 +41,7 @@ export class ExpressServer {
   public async start() {
     await this.lbApp.start();
     const port = this.lbApp.restServer.config.port || 3000;
-    const host = this.lbApp.restServer.config.host || '127.0.0.1';
+    const host = this.lbApp.restServer.config.host ?? '127.0.0.1';
     this.server = this.app.listen(port, host);
     await pEvent(this.server, 'listening');
   }

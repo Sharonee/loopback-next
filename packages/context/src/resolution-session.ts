@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {DecoratorFactory} from '@loopback/metadata';
-import * as debugModule from 'debug';
+import debugModule from 'debug';
 import {Binding} from './binding';
 import {Injection} from './inject';
 import {BoundValue, tryWithFinally, ValueOrPromise} from './value-promise';
@@ -93,7 +93,7 @@ export class ResolutionSession {
     binding: Readonly<Binding>,
     session?: ResolutionSession,
   ): ResolutionSession {
-    session = session || new ResolutionSession();
+    session = session ?? new ResolutionSession();
     session.pushBinding(binding);
     return session;
   }
@@ -125,7 +125,7 @@ export class ResolutionSession {
     injection: Readonly<Injection>,
     session?: ResolutionSession,
   ): ResolutionSession {
-    session = session || new ResolutionSession();
+    session = session ?? new ResolutionSession();
     session.pushInjection(injection);
     return session;
   }
@@ -321,6 +321,10 @@ export class ResolutionSession {
   getResolutionPath() {
     return this.stack.map(i => ResolutionSession.describe(i)).join(' --> ');
   }
+
+  toString() {
+    return this.getResolutionPath();
+  }
 }
 
 /**
@@ -363,5 +367,5 @@ export function asResolutionOptions(
   if (optionsOrSession instanceof ResolutionSession) {
     return {session: optionsOrSession};
   }
-  return optionsOrSession || {};
+  return optionsOrSession ?? {};
 }

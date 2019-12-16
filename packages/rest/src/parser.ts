@@ -10,7 +10,7 @@ import {
   REQUEST_BODY_INDEX,
   SchemasObject,
 } from '@loopback/openapi-v3';
-import * as debugFactory from 'debug';
+import debugFactory from 'debug';
 import {RequestBody, RequestBodyParser} from './body-parsers';
 import {coerceParameter} from './coercion/coerce-parameter';
 import {RestHttpErrors} from './rest-http-error';
@@ -75,7 +75,7 @@ function buildOperationArguments(
 
   const paramArgs: OperationArgs = [];
 
-  for (const paramSpec of operationSpec.parameters || []) {
+  for (const paramSpec of operationSpec.parameters ?? []) {
     if (isReferenceObject(paramSpec)) {
       // TODO(bajtos) implement $ref parameters
       // See https://github.com/strongloop/loopback-next/issues/435

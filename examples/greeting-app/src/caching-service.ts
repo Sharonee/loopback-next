@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {bind, BindingScope, config, ContextView} from '@loopback/core';
-import * as debugFactory from 'debug';
+import debugFactory from 'debug';
 import {Message} from './types';
 const debug = debugFactory('greeter-extension');
 
@@ -94,7 +94,7 @@ export class CachingService {
   async getTTL() {
     const options = await this.optionsView.singleValue();
     debug('Caching options: %j', options);
-    return options?.ttl || 5000;
+    return options?.ttl ?? 5000;
   }
 
   /**

@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {expect} from '@loopback/testlab';
-import * as request from 'request-promise-native';
+import request from 'request-promise-native';
 import {Benchmark} from '..';
 import {Autocannon, EndpointStats} from '../autocannon';
 
@@ -16,9 +16,9 @@ const DUMMY_STATS: EndpointStats = {
 };
 
 describe('Benchmark (SLOW)', function() {
-  // Unfortunately, the todo app requires one second to start
+  // Unfortunately, the todo app requires one second to start (or more on CI)
   // eslint-disable-next-line no-invalid-this
-  this.timeout(5000);
+  this.timeout(10000);
   it('works', async () => {
     const bench = new Benchmark();
     bench.cannonFactory = url => new AutocannonStub(url);

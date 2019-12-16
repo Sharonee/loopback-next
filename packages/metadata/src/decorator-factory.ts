@@ -3,8 +3,8 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import * as debugModule from 'debug';
-import * as _ from 'lodash';
+import debugModule from 'debug';
+import _ from 'lodash';
 import {Reflector} from './reflect';
 import {DecoratorType, MetadataKey, MetadataMap} from './types';
 const debug = debugModule('loopback:metadata:decorator');
@@ -91,7 +91,7 @@ export class DecoratorFactory<
       options,
     );
     const defaultDecoratorName = this.constructor.name.replace(/Factory$/, '');
-    this.decoratorName = this.options.decoratorName || defaultDecoratorName;
+    this.decoratorName = this.options.decoratorName ?? defaultDecoratorName;
     if (this.options.cloneInputSpec) {
       this.spec = DecoratorFactory.cloneDeep(spec);
     }
