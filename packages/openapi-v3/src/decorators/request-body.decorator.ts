@@ -3,8 +3,8 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {MetadataInspector, ParameterDecoratorFactory} from '@loopback/context';
-import * as _ from 'lodash';
+import {MetadataInspector, ParameterDecoratorFactory} from '@loopback/core';
+import _ from 'lodash';
 import {inspect} from 'util';
 import {resolveSchema} from '../generate-schema';
 import {OAI3Keys} from '../keys';
@@ -86,7 +86,7 @@ export function requestBody(requestBodySpec?: Partial<RequestBodyObject>) {
       debug('  options: %s', inspect(requestBodySpec, {depth: null}));
 
     // Use 'application/json' as default content if `requestBody` is undefined
-    requestBodySpec = requestBodySpec || {content: {}};
+    requestBodySpec = requestBodySpec ?? {content: {}};
 
     if (_.isEmpty(requestBodySpec.content))
       requestBodySpec.content = {'application/json': {}};

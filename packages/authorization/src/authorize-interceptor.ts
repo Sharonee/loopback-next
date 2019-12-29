@@ -18,7 +18,7 @@ import {
   Provider,
 } from '@loopback/context';
 import {SecurityBindings, UserProfile} from '@loopback/security';
-import * as debugFactory from 'debug';
+import debugFactory from 'debug';
 import {getAuthorizationMetadata} from './decorators/authorize';
 import {AuthorizationBindings, AuthorizationTags} from './keys';
 import {
@@ -63,7 +63,7 @@ export class AuthorizationInterceptor implements Provider<Interceptor> {
     if (!metadata) {
       debug('No authorization metadata is found for %s', description);
     }
-    metadata = metadata || this.options.defaultMetadata;
+    metadata = metadata ?? this.options.defaultMetadata;
     if (!metadata || metadata?.skip) {
       debug('Authorization is skipped for %s', description);
       const result = await next();
@@ -89,7 +89,7 @@ export class AuthorizationInterceptor implements Provider<Interceptor> {
     debug('Security context for %s', description, authorizationCtx);
     let authorizers = await loadAuthorizers(
       invocationCtx,
-      metadata.voters || [],
+      metadata.voters ?? [],
     );
 
     let finalDecision = this.options.defaultDecision;

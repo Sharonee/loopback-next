@@ -12,7 +12,7 @@ import {
   instantiateClass,
 } from '@loopback/context';
 import {isReferenceObject, OperationObject} from '@loopback/openapi-v3';
-import * as debugModule from 'debug';
+import debugModule from 'debug';
 import {is} from 'type-is';
 import {RestHttpErrors} from '../rest-http-error';
 import {Request} from '../types';
@@ -38,7 +38,7 @@ export class RequestBodyParser {
     parsers?: BodyParser[],
     @inject.context() private readonly ctx?: Context,
   ) {
-    this.parsers = sortParsers(parsers || []);
+    this.parsers = sortParsers(parsers ?? []);
     if (debug.enabled) {
       debug(
         'Body parsers: ',
@@ -88,7 +88,7 @@ export class RequestBodyParser {
     };
     if (!operationSpec.requestBody) return {requestBody};
 
-    const contentType = getContentType(request) || 'application/json';
+    const contentType = getContentType(request) ?? 'application/json';
     debug('Loading request body with content type %j', contentType);
 
     // the type of `operationSpec.requestBody` could be `RequestBodyObject`

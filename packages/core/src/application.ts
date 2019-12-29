@@ -11,7 +11,9 @@ import {
   createBindingFromClass,
   Provider,
 } from '@loopback/context';
-import * as debugFactory from 'debug';
+import assert from 'assert';
+import pEvent from 'p-event';
+import debugFactory from 'debug';
 import {Component, mountComponent} from './component';
 import {CoreBindings, CoreTags} from './keys';
 import {
@@ -33,6 +35,39 @@ export class Application extends Context implements LifeCycleObserver {
   public readonly options: ApplicationConfig;
 
   /**
+   * A flag to indicate that the application is being shut down
+   */
+  private _isShuttingDown = false;
+
+  /**
+   * State of the application
+   */
+  private _state = 'created';
+
+  /**
+   * Get the state of the application. The initial state is `created` and it can
+   * transition as follows by `start` and `stop`:
+   *
+   * 1. start
+   *   - !started -> starting -> started
+   *   - started -> started (no-op)
+   * 2. stop
+   *   - started -> stopping -> stopped
+   *   - !started -> stopped (no-op)
+   *
+   * Two types of states are expected:
+   * - stable, such as `started` and `stopped`
+   * - in process, such as `booting` and `starting`
+   *
+   * Operations such as `start` and `stop` can only be called at a stable state.
+   * The logic should immediately set the state to a new one indicating work in
+   * process, such as `starting` and `stopping`.
+   */
+  public get state() {
+    return this._state;
+  }
+
+  /**
    * Create an application with the given parent context
    * @param parent - Parent context
    */
@@ -51,7 +86,7 @@ export class Application extends Context implements LifeCycleObserver {
     );
 
     if (configOrParent instanceof Context) configOrParent = {};
-    this.options = configOrParent || {};
+    this.options = configOrParent ?? {};
 
     // Bind the life cycle observer registry
     this.bind(CoreBindings.LIFE_CYCLE_OBSERVER_REGISTRY)
@@ -61,6 +96,12 @@ export class Application extends Context implements LifeCycleObserver {
     this.bind(CoreBindings.APPLICATION_INSTANCE).to(this);
     // Make options available to other modules as well.
     this.bind(CoreBindings.APPLICATION_CONFIG).to(this.options);
+
+    const shutdownConfig = this.options.shutdown ?? {};
+    this.setupShutdown(
+      shutdownConfig.signals ?? ['SIGTERM'],
+      shutdownConfig.gracePeriod,
+    );
   }
 
   /**
@@ -81,7 +122,7 @@ export class Application extends Context implements LifeCycleObserver {
    * ```
    */
   controller(controllerCtor: ControllerClass, name?: string): Binding {
-    debug('Adding controller %s', name || controllerCtor.name);
+    debug('Adding controller %s', name ?? controllerCtor.name);
     const binding = createBindingFromClass(controllerCtor, {
       name,
       namespace: CoreBindings.CONTROLLERS,
@@ -114,7 +155,7 @@ export class Application extends Context implements LifeCycleObserver {
     ctor: Constructor<T>,
     name?: string,
   ): Binding<T> {
-    debug('Adding server %s', name || ctor.name);
+    debug('Adding server %s', name ?? ctor.name);
     const binding = createBindingFromClass(ctor, {
       name,
       namespace: CoreBindings.SERVERS,
@@ -175,19 +216,80 @@ export class Application extends Context implements LifeCycleObserver {
   }
 
   /**
-   * Start the application, and all of its registered observers.
+   * Assert there is no other operation is in progress, i.e., the state is not
+   * `*ing`, such as `starting` or `stopping`.
+   *
+   * @param op - The operation name, such as 'boot', 'start', or 'stop'
    */
-  public async start(): Promise<void> {
-    const registry = await this.getLifeCycleObserverRegistry();
-    await registry.start();
+  protected assertNotInProcess(op: string) {
+    assert(
+      !this._state.endsWith('ing'),
+      `Cannot ${op} the application as it is ${this._state}.`,
+    );
   }
 
   /**
-   * Stop the application instance and all of its registered observers.
+   * Assert current state of the application to be one of the expected values
+   * @param op - The operation name, such as 'boot', 'start', or 'stop'
+   * @param states - Valid states
+   */
+  protected assertInStates(op: string, ...states: string[]) {
+    assert(
+      states.includes(this._state),
+      `Cannot ${op} the application as it is ${this._state}. Valid states are ${states}.`,
+    );
+  }
+
+  /**
+   * Transition the application to a new state and emit an event
+   * @param state - The new state
+   */
+  protected setState(state: string) {
+    const oldState = this._state;
+    this._state = state;
+    if (oldState !== state) {
+      this.emit('stateChanged', {from: oldState, to: this._state});
+      this.emit(state);
+    }
+  }
+
+  protected async awaitState(state: string) {
+    await pEvent(this, state);
+  }
+
+  /**
+   * Start the application, and all of its registered observers. The application
+   * state is checked to ensure the integrity of `start`.
+   *
+   * If the application is already started, no operation is performed.
+   */
+  public async start(): Promise<void> {
+    if (this._state === 'starting') return this.awaitState('started');
+    this.assertNotInProcess('start');
+    // No-op if it's started
+    if (this._state === 'started') return;
+    this.setState('starting');
+    const registry = await this.getLifeCycleObserverRegistry();
+    await registry.start();
+    this.setState('started');
+  }
+
+  /**
+   * Stop the application instance and all of its registered observers. The
+   * application state is checked to ensure the integrity of `stop`.
+   *
+   * If the application is already stopped or not started, no operation is
+   * performed.
    */
   public async stop(): Promise<void> {
+    if (this._state === 'stopping') return this.awaitState('stopped');
+    this.assertNotInProcess('stop');
+    // No-op if it's created or stopped
+    if (this._state !== 'started') return;
+    this.setState('stopping');
     const registry = await this.getLifeCycleObserverRegistry();
     await registry.stop();
+    this.setState('stopped');
   }
 
   private async getLifeCycleObserverRegistry() {
@@ -217,7 +319,7 @@ export class Application extends Context implements LifeCycleObserver {
    * ```
    */
   public component(componentCtor: Constructor<Component>, name?: string) {
-    debug('Adding component: %s', name || componentCtor.name);
+    debug('Adding component: %s', name ?? componentCtor.name);
     const binding = createBindingFromClass(componentCtor, {
       name,
       namespace: CoreBindings.COMPONENTS,
@@ -253,7 +355,7 @@ export class Application extends Context implements LifeCycleObserver {
     ctor: Constructor<T>,
     name?: string,
   ): Binding<T> {
-    debug('Adding life cycle observer %s', name || ctor.name);
+    debug('Adding life cycle observer %s', name ?? ctor.name);
     const binding = createBindingFromClass(ctor, {
       name,
       namespace: CoreBindings.LIFE_CYCLE_OBSERVERS,
@@ -315,12 +417,63 @@ export class Application extends Context implements LifeCycleObserver {
     this.add(binding);
     return binding;
   }
+
+  /**
+   * Set up signals that are captured to shutdown the application
+   * @param signals - An array of signals to be trapped
+   * @param gracePeriod - A grace period in ms before forced exit
+   */
+  protected setupShutdown(signals: NodeJS.Signals[], gracePeriod?: number) {
+    const cleanup = async (signal: string) => {
+      const kill = () => {
+        // eslint-disable-next-line @typescript-eslint/no-misused-promises
+        signals.forEach(sig => process.removeListener(sig, cleanup));
+        process.kill(process.pid, signal);
+      };
+      debug('Signal %s received for process %d', signal, process.pid);
+      if (!this._isShuttingDown) {
+        this._isShuttingDown = true;
+        let timer;
+        if (typeof gracePeriod === 'number' && !isNaN(gracePeriod)) {
+          timer = setTimeout(kill, gracePeriod);
+        }
+        try {
+          await this.stop();
+        } finally {
+          if (timer != null) clearTimeout(timer);
+          kill();
+        }
+      }
+    };
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    signals.forEach(sig => process.on(sig, cleanup));
+  }
 }
+
+/**
+ * Options to set up application shutdown
+ */
+export type ShutdownOptions = {
+  /**
+   * An array of signals to be trapped for graceful shutdown
+   */
+  signals?: NodeJS.Signals[];
+  /**
+   * Period in milliseconds to wait for the grace shutdown to finish before
+   * exiting the process
+   */
+  gracePeriod?: number;
+};
 
 /**
  * Configuration for application
  */
 export interface ApplicationConfig {
+  /**
+   * Configuration for signals that shut down the application
+   */
+  shutdown?: ShutdownOptions;
+
   /**
    * Other properties
    */

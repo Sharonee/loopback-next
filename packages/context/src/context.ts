@@ -3,7 +3,7 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import * as debugFactory from 'debug';
+import debugFactory from 'debug';
 import {EventEmitter} from 'events';
 import {v1 as uuidv1} from 'uuid';
 import {Binding, BindingTag} from './binding';
@@ -133,7 +133,7 @@ export class Context extends EventEmitter {
       _parent = undefined;
     }
     this._parent = _parent;
-    this.name = name || uuidv1();
+    this.name = name ?? uuidv1();
   }
 
   /**
@@ -186,7 +186,7 @@ export class Context extends EventEmitter {
     if (this._parent == null) return;
 
     // Keep track of parent event listeners so that we can remove them
-    this._parentEventListeners = this._parentEventListeners || new Map();
+    this._parentEventListeners = this._parentEventListeners ?? new Map();
     if (this._parentEventListeners.has(event)) return;
 
     const parentEventListener = (
@@ -514,7 +514,7 @@ export class Context extends EventEmitter {
    * @param observer - Context observer instance or function
    */
   subscribe(observer: ContextEventObserver): Subscription {
-    this.observers = this.observers || new Set();
+    this.observers = this.observers ?? new Set();
     this.setupEventHandlersIfNeeded();
     this.observers.add(observer);
     return new ContextSubscription(this, observer);

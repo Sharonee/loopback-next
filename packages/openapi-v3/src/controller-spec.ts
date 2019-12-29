@@ -3,13 +3,13 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {DecoratorFactory, MetadataInspector} from '@loopback/context';
+import {DecoratorFactory, MetadataInspector} from '@loopback/core';
 import {
   getJsonSchema,
   getJsonSchemaRef,
   JsonSchemaOptions,
 } from '@loopback/repository-json-schema';
-import * as _ from 'lodash';
+import {includes} from 'lodash';
 import {resolveSchema} from './generate-schema';
 import {jsonToSchemaObject, SchemaRef} from './json-to-schema';
 import {OAI3Keys} from './keys';
@@ -81,7 +81,7 @@ function resolveControllerSpec(constructor: Function): ControllerSpec {
     MetadataInspector.getAllMethodMetadata<RestEndpoint>(
       OAI3Keys.METHODS_KEY,
       constructor.prototype,
-    ) || {};
+    ) ?? {};
 
   endpoints = DecoratorFactory.cloneDeep(endpoints);
   for (const op in endpoints) {
@@ -121,7 +121,7 @@ function resolveControllerSpec(constructor: Function): ControllerSpec {
       const responseObject: ResponseObject | ReferenceObject =
         operationSpec.responses[code];
       if (isReferenceObject(responseObject)) continue;
-      const content = responseObject.content || {};
+      const content = responseObject.content ?? {};
       for (const c in content) {
         debug('  processing response code %s with content-type %', code, c);
         processSchemaExtensions(spec, content[c].schema);
@@ -222,7 +222,7 @@ function resolveControllerSpec(constructor: Function): ControllerSpec {
     const paramTypes = opMetadata.parameterTypes;
 
     const isComplexType = (ctor: Function) =>
-      !_.includes([String, Number, Boolean, Array, Object], ctor);
+      !includes([String, Number, Boolean, Array, Object], ctor);
 
     for (const p of paramTypes) {
       if (isComplexType(p)) {

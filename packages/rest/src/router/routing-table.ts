@@ -9,9 +9,9 @@ import {
   ParameterObject,
   PathObject,
 } from '@loopback/openapi-v3';
-import * as assert from 'assert';
-import * as debugFactory from 'debug';
-import * as HttpErrors from 'http-errors';
+import assert from 'assert';
+import debugFactory from 'debug';
+import HttpErrors from 'http-errors';
 import {inspect} from 'util';
 import {Request} from '../types';
 import {
@@ -57,7 +57,7 @@ export class RoutingTable {
 
     debug('Registering Controller with API %s', inspect(spec, {depth: null}));
 
-    const basePath = spec.basePath || '/';
+    const basePath = spec.basePath ?? '/';
     for (const p in spec.paths) {
       for (const verb in spec.paths[p]) {
         const opSpec: OperationObject = spec.paths[p][verb];

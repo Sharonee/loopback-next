@@ -3,7 +3,7 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import * as assert from 'assert';
+import assert from 'assert';
 import {AnyObject} from './common-types';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -258,7 +258,7 @@ export class WhereBuilder<MT extends object = AnyObject> {
   where: Where<MT>;
 
   constructor(w?: Where<MT>) {
-    this.where = w || {};
+    this.where = w ?? {};
   }
 
   private add(w: Where<MT>): this {
@@ -464,7 +464,7 @@ export class FilterBuilder<MT extends object = AnyObject> {
   filter: Filter<MT>;
 
   constructor(f?: Filter<MT>) {
-    this.filter = f || {};
+    this.filter = f ?? {};
   }
 
   /**

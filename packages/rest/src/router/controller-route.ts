@@ -13,10 +13,10 @@ import {
 } from '@loopback/context';
 import {CoreBindings} from '@loopback/core';
 import {OperationObject} from '@loopback/openapi-v3';
-import * as HttpErrors from 'http-errors';
+import HttpErrors from 'http-errors';
 import {RestBindings} from '../keys';
 import {OperationArgs, OperationRetval} from '../types';
-import {BaseRoute} from './base-route';
+import {BaseRoute, RouteSource} from './base-route';
 
 /*
  * A controller instance with open properties/methods
@@ -64,7 +64,7 @@ export class ControllerRoute<T> extends BaseRoute {
     methodName?: string,
   ) {
     const controllerName = spec['x-controller-name'] || controllerCtor.name;
-    methodName = methodName || spec['x-operation-name'];
+    methodName = methodName ?? spec['x-operation-name'];
 
     if (!methodName) {
       throw new Error(
@@ -90,7 +90,7 @@ export class ControllerRoute<T> extends BaseRoute {
     );
 
     this._controllerFactory =
-      controllerFactory || createControllerFactoryForClass(controllerCtor);
+      controllerFactory ?? createControllerFactoryForClass(controllerCtor);
     this._controllerCtor = controllerCtor;
     this._controllerName = controllerName || controllerCtor.name;
     this._methodName = methodName;
@@ -138,7 +138,9 @@ export class ControllerRoute<T> extends BaseRoute {
       );
     }
     // Invoke the method with dependency injection
-    return invokeMethod(controller, this._methodName, requestContext, args);
+    return invokeMethod(controller, this._methodName, requestContext, args, {
+      source: new RouteSource(this),
+    });
   }
 }
 
